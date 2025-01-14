@@ -1,4 +1,4 @@
 - 👋 Hi, I’m @Tiago1412
 - 👀 I’m interested in Database
-- 🌱 I’m currently learning systems auditing and security
+- 🌱 I’m currently learning systems auditing, security and database
 - 📫 How to reach me Instagram or LinkedIn
