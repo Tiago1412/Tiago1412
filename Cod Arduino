@@ -1,0 +1,68 @@
+#include <Wire.h>                    // Biblioteca para comunicação I2C (não está sendo usada nesse código)
+#include <OneWire.h>                // Biblioteca para comunicação com dispositivos OneWire (como o DS18B20)
+#include <DallasTemperature.h>      // Biblioteca específica para o sensor de temperatura DS18B20
+
+// Definições dos pinos usados para os sensores
+#define PIN_UMIDADE_ANALOG A0       // Pino analógico para leitura da umidade do solo
+#define PIN_UMIDADE_DIGITAL 2       // Pino digital para leitura do estado seco/úmido
+
+#define PIN_RELE 3                  // Pino conectado ao relé que controla a bomba d'água
+
+#define PIN_TEMPERATURA 4           // Pino digital conectado ao sensor de temperatura DS18B20
+OneWire oneWire(PIN_TEMPERATURA);  // Cria uma instância do barramento OneWire no pino 4
+DallasTemperature sensors(&oneWire); // Cria o objeto de controle do sensor de temperatura
+
+void setup() {
+  Serial.begin(9600);              // Inicia a comunicação serial para monitoramento
+
+  // Configura os pinos dos sensores como entrada
+  pinMode(PIN_UMIDADE_ANALOG, INPUT);
+  pinMode(PIN_UMIDADE_DIGITAL, INPUT);
+
+  // Configura o pino do relé como saída
+  pinMode(PIN_RELE, OUTPUT);
+  digitalWrite(PIN_RELE, LOW);     // Inicialmente desliga a bomba (LOW para relé ativo)
+
+  sensors.begin();                 // Inicializa o sensor de temperatura
+
+  Serial.println("Iniciando sistema..."); // Mensagem de inicialização
+}
+
+void loop() {
+  // Faz a leitura do sensor de umidade do solo via pino analógico
+  int umidadeAnalogica = analogRead(PIN_UMIDADE_ANALOG);
+  // Converte a leitura para porcentagem (baseado em valores experimentais 1023 = seco, 315 = úmido)
+  int umidadePercentual = map(umidadeAnalogica, 1023, 315, 0, 100);
+  umidadePercentual = constrain(umidadePercentual, 0, 100); // Garante que fique entre 0 e 100%
+
+  // Faz a leitura digital para saber se o solo está seco
+  int umidadeDigital = digitalRead(PIN_UMIDADE_DIGITAL);
+  bool soloSeco = (umidadeDigital == HIGH); // HIGH indica solo seco
+
+  // Controle do relé com base na umidade do solo
+  if (soloSeco) {
+    digitalWrite(PIN_RELE, LOW);  // Liga a bomba (relé acionado)
+  } else {
+    digitalWrite(PIN_RELE, HIGH); // Desliga a bomba (relé desativado)
+  }
+
+  // Lê a temperatura do sensor DS18B20
+  sensors.requestTemperatures();                        // Solicita a leitura
+  float temperaturaC = sensors.getTempCByIndex(0);      // Lê a temperatura do primeiro sensor no barramento
+
+  // Exibe os dados no Monitor Serial
+  Serial.print("Umidade: ");
+  Serial.print(umidadePercentual);
+  Serial.println(" %");
+
+  Serial.print("Status: ");
+  Serial.println(soloSeco ? "Seco" : "Úmido");
+
+  Serial.print("Temperatura: ");
+  Serial.print(temperaturaC);
+  Serial.println(" ºC");
+
+  Serial.println("---------------------"); // Separador visual
+
+  delay(4000); // Aguarda 4 segundos antes da próxima leitura
+}
